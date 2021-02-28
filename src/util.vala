@@ -28,7 +28,7 @@ namespace Prz {
         }
 
         public static uint32 byte_array_to_number (uint8[] arr) {
-            var bp = new ByteParser (arr);
+            var bp = new ByteScanner (arr);
 
             if (arr.length == 1) {
                 return bp.read_byte ();

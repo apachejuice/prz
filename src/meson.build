@@ -1,12 +1,13 @@
 prz_sources = [
   'main.vala',
-  'byteparser.vala',
+  'bytescanner.vala',
   'formaterror.vala',
   'error.vala',
   'config.vapi',
   'pool.vala',
   'util.vala',
-  'vm.vala',
+  'byteparser.vala',
+  'code.vala',
 ]
 
 prz_deps = [

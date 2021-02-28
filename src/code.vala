@@ -1,4 +1,4 @@
-/* main.vala
+/* code.vala
  *
  * Copyright 2021 apachejuice <ubuntugeek1904@gmail.com>
  *
@@ -17,23 +17,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+namespace Prz {
+    public class Code : Object {
+        public Pool constant_pool { get; private set; }
 
-/**
- * The entry point for the ByteParser.
- */
-int main (string[] args) {
-    // Make sure GLib uses the correct locale
-    Intl.setlocale (LocaleCategory.ALL);
-
-    var parser = new Prz.ByteParser ();
-    try {
-        parser.parse_bytes (args[1]);
-    } catch (Prz.FormatError e) {
-        stdout.printf ("An error occurred while validating the file format: %s\n", e.message);
-        Process.exit (22);
-    } catch (Error e) {
-        Prz.ErrorReporter.fatal ((int) e.domain, e.message);
+        public Code (Pool constant_pool) {
+            this.constant_pool = constant_pool;
+        }
     }
-
-    return parser.code;
 }

@@ -1,4 +1,4 @@
-/* byteparser.vala
+/* ByteScanner.vala
  *
  * Copyright 2021 apachejuice <ubuntugeek1904@gmail.com>
  *
@@ -20,100 +20,141 @@ using GLib;
 
 namespace Prz {
     /**
-     * This class provides methods and
-     * routines for parsing raw bytecode.
+     * The ByteParser builds a {@link Code} out of input bytes.
      */
     public class ByteParser : Object {
-        /**
-         * The index this ByteParser is currently at.
-         */
-        private int idx = 0;
+        public const int64 MAGIC_VALUE = 0xBEEFCAFE;
+        public const int MIN_POOL_ENTRIES_COUNT = 0x01;
+        public const uint8 CONSTANT_POOL_BEGIN = 0xCB;
+        public const uint8 CONSTANT_POOL_ENTRY = 0xE0;
+        public const uint8 CONSTANT_POOL_TYPE_NUM = 0x88;
+        public const uint8 CONSTANT_POOL_TYPE_TEXT = 0x89;
 
-        /**
-         * The bytes this ByteParser parses.
-         */
-        private uint8[] bytes;
+        private ByteScanner scanner;
+        public int code { get; private set; }
 
-        /**
-         * Create a new ByteParser used to parse ``bytes.``
-         *
-         * @param bytes The bytes this ByteParser parsers.
-         * @return A new ByteParser for the specified bytes.
-         */
-        public ByteParser (uint8[] bytes) {
-            this.bytes = bytes;
+        private enum IntegerType {
+            BYTE,
+            SHORT,
+            INT,
         }
 
-        /**
-         * Reads a single 8-bit integer from ``bytes.``
-         *
-         * @return The next byte as an {@link uint8}.
-         */
-        public uint8 read_byte () requires (this.bytes.length - idx >= 1) {
-            return this.bytes[idx++];
-        }
+        private uint8[]? read_file (string path) throws Error {
+            var f = File.new_for_path (path);
+            var size = f.query_info ("standard::size", 0).get_size ();
 
-        /**
-         * Reads a single 16-bit integer from ``bytes.``
-         *
-         * @return The next 2 bytes as a {@link uint16}.
-         */
-        public uint16 read_short () requires (this.bytes.length - idx >= 2) {
-            return
-                (((uint16) this.bytes[idx++]) << 8)
-                + ((uint16) this.bytes[idx++]);
-        }
-
-        /**
-         * Reads a single 32-bit integer from ``bytes.``
-         *
-         * @return The next 4 bytes as a {@link uint32}.
-         */
-        public uint32 read_int () requires (this.bytes.length - idx >= 4) {
-            return
-                  (((uint32) this.bytes[idx++]) << 24)
-                + (((uint32) this.bytes[idx++]) << 16)
-                + (((uint32) this.bytes[idx++]) <<  8)
-                + ((uint32) this.bytes[idx++]);
-        }
-
-        /**
-         * Peeks a single 8-bit integer from ``bytes.``
-         *
-         * @return The next byte as an {@link uint8}.
-         */
-        public uint8 peek_byte () requires (this.bytes.length - idx >= 1) {
-            return this.bytes[idx];
-        }
-
-        /**
-         * Peeks a single 16-bit integer from ``bytes.``
-         *
-         * @return The next 2 bytes as a {@link uint16}.
-         */
-        public uint16 peek_short () requires (this.bytes.length - idx >= 2) {
-            return
-                (((uint16) this.bytes[idx]) << 8)
-                + ((uint16) this.bytes[idx + 1]);
-        }
-
-        /**
-         * Peeks a single 32-bit integer from ``bytes.``
-         *
-         * @return The next 4 bytes as a {@link uint32}.
-         */
-        public uint32 peek_int () requires (this.bytes.length - idx >= 4) {
-            return
-                  (((uint32) this.bytes[idx]) << 24)
-                + (((uint32) this.bytes[idx + 1]) << 16)
-                + (((uint32) this.bytes[idx + 2]) <<  8)
-                + ((uint32) this.bytes[idx + 3]);
-        }
-
-        public bool has_next {
-            get {
-                return idx < this.bytes.length;
+            try {
+                var s = f.read ();
+                uint8[] buf = new uint8[size];
+                size_t read;
+                s.read_all (buf, out read);
+                debug ("Read file %s, size %zu", path, read);
+                s.close ();
+                return buf;
+            } catch (FormatError e) {
+                stdout.printf ("I/O error while reading file %s: %s\n", path, e.message);
+                Process.exit (21);
+            } catch (Error e) {
+                stdout.printf ("Error while reading file %s: %s\n", path, e.message);
+                Process.exit (21);
             }
+        }
+
+        public void parse_bytes (string path) throws Error {
+            var bytes = read_file (path);
+            scanner = new ByteScanner (bytes);
+
+            // Verify the first 4 bytes as 0xBEEFCAFE
+            uint32 magic;
+            if ((magic = scanner.read_int ()) != MAGIC_VALUE) {
+                throw new FormatError.INVALID_MAGIC_BYTES ("Invalid magic value 0x0x%X".printf (magic));
+            }
+
+            var pool = build_constant_pool ();
+        }
+
+        private Pool build_constant_pool () throws FormatError {
+            var entries = new Gee.ArrayList<Pool.Entry> ();
+            accept (CONSTANT_POOL_BEGIN);
+            var count = 0;
+
+            while (read (IntegerType.BYTE) == CONSTANT_POOL_ENTRY) {
+                Pool.Entry? e = null;
+                var len = read (IntegerType.INT);
+                var type = read (IntegerType.BYTE);
+
+                if (type == CONSTANT_POOL_TYPE_TEXT) {
+                    var data = new uint8[len];
+                    for (uint32 i = 0; i < len; i++) {
+                        data[i] = (uint8) read (IntegerType.BYTE);
+                    }
+
+                    e = new Pool.Entry (data, count);
+                } else if (type == CONSTANT_POOL_TYPE_NUM) {
+                    uint32 num;
+                    if (len == 1) {
+                        num = read (IntegerType.BYTE);
+                    } else if (len == 2) {
+                        num = read (IntegerType.SHORT);
+                    } else if (len == 4) {
+                        num = read (IntegerType.INT);
+                    } else {
+                        throw new FormatError.SEMANTIC ("Invalid length 0x%X on integer type", len);
+                    }
+
+                    e = new Pool.Entry.number (num, count);
+                } else {
+                    throw new FormatError.INVALID ("Invalid constant pool entry type 0x%X", type);
+                }
+
+                count++;
+                entries.add (e);
+                if (!scanner.has_next) {
+                    break;
+                }
+            }
+
+            if (count < MIN_POOL_ENTRIES_COUNT) {
+                throw new FormatError.SEMANTIC ("Invalid constant pool length %d\n", entries.size);
+            }
+
+            return new Pool (entries);
+        }
+
+        private void accept (uint32 num) throws FormatError, FormatError {
+            uint32 a;
+
+            if (num < 256) {
+                a = scanner.read_byte ();
+            } else if (num < 65536) {
+                a = scanner.read_short ();
+            } else {
+                a = scanner.read_int ();
+            }
+
+            if (num != a) {
+                throw new FormatError.INVALID ("expected 0x%X, got 0x%X", num, a);
+            }
+        }
+
+        private uint32 read (IntegerType type) throws FormatError {
+            switch (type) {
+                case IntegerType.BYTE:  return scanner.read_byte ();
+                case IntegerType.SHORT: return scanner.read_short ();
+                case IntegerType.INT:   return scanner.read_int ();
+           }
+
+           return 0;
+        }
+
+        private uint32 peek (IntegerType type) throws FormatError {
+            switch (type) {
+                case IntegerType.BYTE:  return scanner.peek_byte ();
+                case IntegerType.SHORT: return scanner.peek_short ();
+                case IntegerType.INT:   return scanner.peek_int ();
+            }
+
+            return 0;
         }
     }
 }
