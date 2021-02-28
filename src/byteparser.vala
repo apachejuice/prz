@@ -60,8 +60,8 @@ namespace Prz {
          */
         public uint16 read_short () requires (this.bytes.length - idx >= 2) {
             return
-                (((uint16) this.bytes[idx]) << 8)
-                + ((uint16) this.bytes[++idx]);
+                (((uint16) this.bytes[idx++]) << 8)
+                + ((uint16) this.bytes[idx++]);
         }
 
         /**
@@ -69,25 +69,50 @@ namespace Prz {
          *
          * @return The next 4 bytes as a {@link uint32}.
          */
-        public uint32 read_int () requires (this.bytes.length >= 4) {
+        public uint32 read_int () requires (this.bytes.length - idx >= 4) {
+            return
+                  (((uint32) this.bytes[idx++]) << 24)
+                + (((uint32) this.bytes[idx++]) << 16)
+                + (((uint32) this.bytes[idx++]) <<  8)
+                + ((uint32) this.bytes[idx++]);
+        }
+
+        /**
+         * Peeks a single 8-bit integer from ``bytes.``
+         *
+         * @return The next byte as an {@link uint8}.
+         */
+        public uint8 peek_byte () requires (this.bytes.length - idx >= 1) {
+            return this.bytes[idx];
+        }
+
+        /**
+         * Peeks a single 16-bit integer from ``bytes.``
+         *
+         * @return The next 2 bytes as a {@link uint16}.
+         */
+        public uint16 peek_short () requires (this.bytes.length - idx >= 2) {
+            return
+                (((uint16) this.bytes[idx]) << 8)
+                + ((uint16) this.bytes[idx + 1]);
+        }
+
+        /**
+         * Peeks a single 32-bit integer from ``bytes.``
+         *
+         * @return The next 4 bytes as a {@link uint32}.
+         */
+        public uint32 peek_int () requires (this.bytes.length - idx >= 4) {
             return
                   (((uint32) this.bytes[idx]) << 24)
                 + (((uint32) this.bytes[idx + 1]) << 16)
                 + (((uint32) this.bytes[idx + 2]) <<  8)
-                + ((uint32) this.bytes[++idx + 2]);
+                + ((uint32) this.bytes[idx + 3]);
         }
 
-        /**
-         * Initializes this ByteParser and verifies the first
-         * 4 magic bytes are correct.
-         *
-         * @throws FormatError If the first 4 magic bytes ``!= 0xBEEFCAFE.``
-         */
-        public void init () throws FormatError {
-            // Verify the first 4 bytes as 0xBEEFCAFE
-            uint32 magic;
-            if ((magic = read_int ()) != 0xBEEFCAFE) {
-                throw new FormatError.INVALID_MAGIC_BYTES ("Invalid magic value 0x%X".printf (magic));
+        public bool has_next {
+            get {
+                return idx < this.bytes.length;
             }
         }
     }

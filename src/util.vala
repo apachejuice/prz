@@ -26,5 +26,29 @@ namespace Prz {
             for (uint i = 0; i < (uint) list.size; i++) result[i] = list[(int) i];
             return result;
         }
+
+        public static uint32 byte_array_to_number (uint8[] arr) {
+            var bp = new ByteParser (arr);
+
+            if (arr.length == 1) {
+                return bp.read_byte ();
+            } else if (arr.length == 2) {
+                return bp.read_short ();
+            } else if (arr.length == 4) {
+                return bp.read_int ();
+            } else {
+                stdout.printf ("Cannot read number from %d bytes\n", arr.length);
+                Process.exit (1);
+            }
+        }
+
+        public static string byte_array_to_string (uint8[] arr) {
+            var result = new StringBuilder ();
+            foreach (var b in arr) {
+                result.append_printf ("%c", b);
+            }
+
+            return result.str;
+        }
     }
 }

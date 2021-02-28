@@ -21,14 +21,14 @@ using GLib;
 namespace Prz {
     public class ErrorReporter {
         [PrintfFormat]
-        public static void fatal (string message, ...) {
+        public static void fatal (int code, string message, ...) {
             stdout.printf ("The Pretzel Virtual Machine encountered a fatal error and is unable to continue.\n");
             stdout.vprintf (@"Message: $message\n", va_list ());
             stdout.printf ("We have generated a dump of run-time information for you.\n");
             stdout.printf("If the error code is 'ERR_INTERNAL', contact the developers and attach this message and the code that triggered it.\n");
             print_info_table ();
             print_dump ();
-            Process.exit (23);
+            Process.exit (code);
         }
 
         private static void print_info_table () {

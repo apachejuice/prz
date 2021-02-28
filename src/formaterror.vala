@@ -28,5 +28,23 @@ namespace Prz {
          * were incorrect - they must equal ``0xBEEFCAFE.``
          */
         INVALID_MAGIC_BYTES,
+
+        /**
+         * This error code is thrown when an unexpected
+         * byte was found in the bytecode.
+         */
+        INVALID,
+
+        /**
+         * This error code is thrown when there is a
+         * semantic issue; such as an invalid attribute on
+         * some value.
+         */
+        SEMANTIC,
+
+        /**
+         * This error code indicates that a byte was expected but not found.
+         */
+        EOF,
     }
 }

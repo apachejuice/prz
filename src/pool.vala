@@ -33,7 +33,7 @@ namespace Prz {
             /**
              * Can this Entry be a number constant?
              */
-            public bool can_be_number { get { return len <= 4; } }
+            public bool can_be_number { get { return len in new size_t[] {1, 2, 4}; } }
 
             /**
              * The raw bytes this Entry consists of.
@@ -62,6 +62,28 @@ namespace Prz {
                 this.index = index;
             }
 
+            public Entry.number (uint32 num, uint index) {
+                uint8[] arr;
+
+                if (num < 256) {
+                    arr = {(uint8) num};
+                } else if (num < 65535) {
+                    arr = new uint8[] {
+                        (uint8)(num & 0xff),
+                        (uint8)((num >> 8) & 0xff),
+                    };
+                } else {
+                    arr = new uint8[] {
+                        (uint8)((num >> 24) & 0xff),
+                        (uint8)((num >> 16) & 0xff),
+                        (uint8)((num >> 8) & 0xff),
+                        (uint8)((num >> 0) & 0xff),
+                    };
+                }
+
+                this (arr, index);
+            }
+
             /**
              * Returns ``true``, if this Entry is content-equivalent
              * to ``other`` (e.g. can it be used as a link.)
@@ -69,6 +91,23 @@ namespace Prz {
             public bool equals (Entry other) {
                 return this.len == other.len
                     && this.raw_data == other.raw_data;
+            }
+
+            public string to_string () {
+                var result = new StringBuilder ();
+                result.append (@"Entry[len=$len index=$index can_be_number=$can_be_number value={");
+                for (var i = 0; i < raw_data.length - 1; i++) {
+                    result.append ("0x%X, ".printf (raw_data[i]));
+                }
+
+                result.append ("0x%X}".printf (raw_data[raw_data.length - 1]));
+                if (can_be_number) {
+                    result.append (@" as_number=$(Util.byte_array_to_number (raw_data))]");
+                } else {
+                    result.append (@" as_string='$(Util.byte_array_to_string (raw_data))']");
+                }
+
+                return result.str;
             }
         }
 

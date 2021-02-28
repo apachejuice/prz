@@ -57,7 +57,7 @@ echo "Found $COUNT source files, $EXCLUDE_COUNT excluded"
 sleep $TIMEOUT
 VALADOC_COMMAND="valadoc --directory doc $SOURCES \
 --pkg gee-0.8 --pkg gio-2.0 --pkg linux --package-name $PKG_NAME-$PKG_VER \
---package-version $PKG_VER --force --internal --private"
+--package-version $PKG_VER --force"
 
 echo "Generating documentation..."
 TMP_FILE=$(mktemp "/tmp/docgen-XXXXXX.sh")
