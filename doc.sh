@@ -41,13 +41,15 @@ echo "Found valadoc at $(which valadoc)..."
 sleep $TIMEOUT
 echo "Enumerating sources..."
 sleep $TIMEOUT
-SOURCES=$(find "$SRCDIR/" -type f -name "*.vala" -printf "\"%p\" ")
+SOURCES=$(find "$SRCDIR/" -type f \( -name "*.vala" -o -name "*.vapi" \) -printf "\"%p\" ")
 exclude_sources
 get_output_dir
 echo "Using output directory '$OUTPUT_DIR'."
 
 COUNT=$((0))
 for S in $SOURCES; do
+    echo ".. $S"
+    sleep $TIMEOUT
     COUNT=$(($COUNT + 1))
 done
 
@@ -57,7 +59,7 @@ echo "Found $COUNT source files, $EXCLUDE_COUNT excluded"
 sleep $TIMEOUT
 VALADOC_COMMAND="valadoc --directory doc $SOURCES \
 --pkg gee-0.8 --pkg gio-2.0 --pkg linux --package-name $PKG_NAME-$PKG_VER \
---package-version $PKG_VER --force"
+--package-version $PKG_VER --force --verbose"
 
 echo "Generating documentation..."
 TMP_FILE=$(mktemp "/tmp/docgen-XXXXXX.sh")

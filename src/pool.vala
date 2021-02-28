@@ -51,6 +51,12 @@ namespace Prz {
             public uint index { get; private set; }
 
             /**
+             * Is this Entry a link to another entry?
+             * This is done on duplicate entries for optimization.
+             */
+            public bool is_link { get; private set; default = false; }
+
+            /**
              * Create a new Entry from the bytes in ``data.``
              *
              * @param data The data in this Entry.
@@ -82,6 +88,10 @@ namespace Prz {
                 }
 
                 this (arr, index);
+            }
+
+            public Entry.link (uint32 dest) {
+                this ({}, dest);
             }
 
             /**
@@ -119,7 +129,7 @@ namespace Prz {
         /**
          * The {@link Entry}es in this Pool.
          */
-        public Gee.Map<uint, Entry> entries { get; private set; }
+        public Gee.List<Entry> entries { get; private set; }
 
         /**
          * Create a Pool from a list of {@link Entry}es.
@@ -128,14 +138,30 @@ namespace Prz {
          * @return A new Pool object containg the specified {@link Entry}es.
          */
         public Pool (Gee.List<Entry> entries) {
-            this.entries = Util.list_to_map (entries);
+            this.entries = drop (entries);
+        }
+
+        private Gee.List<Entry> drop (Gee.Collection<Entry> entries) {
+            var result = new Gee.ArrayList<Entry> ();
+            foreach (var e in entries) {
+                if (!(e in result)) {
+                    result.add (e);
+                }
+            }
+
+            return result;
         }
 
         public void add_entry (Entry e) {
-            for (var i = 0u; i < entries.size; i++) {
-                if (entries[i].equals (e)) {
-                    entries[entries.size] = entries[i];
-                }
+            this.entries.add (e);
+        }
+
+        public new Entry get (uint index) requires (index >= 0) {
+            var entry = this.entries[(int) index];
+            if (entry.is_link) {
+                return get (entry.index);
+            } else {
+                return entry;
             }
         }
     }

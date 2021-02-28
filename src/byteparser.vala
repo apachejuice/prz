@@ -26,7 +26,9 @@ namespace Prz {
         public const int64 MAGIC_VALUE = 0xBEEFCAFE;
         public const int MIN_POOL_ENTRIES_COUNT = 0x01;
         public const uint8 CONSTANT_POOL_BEGIN = 0xCB;
+        public const uint8 CONSTANT_POOL_END = 0xBC;
         public const uint8 CONSTANT_POOL_ENTRY = 0xE0;
+        public const uint8 CONSTANT_POOL_TYPE_LINK = 0x87;
         public const uint8 CONSTANT_POOL_TYPE_NUM = 0x88;
         public const uint8 CONSTANT_POOL_TYPE_TEXT = 0x89;
 
@@ -103,13 +105,16 @@ namespace Prz {
                     }
 
                     e = new Pool.Entry.number (num, count);
+                } else if (type == CONSTANT_POOL_TYPE_LINK) {
+                    var dest = read (IntegerType.INT);
+                    e = new Pool.Entry.link (dest);
                 } else {
                     throw new FormatError.INVALID ("Invalid constant pool entry type 0x%X", type);
                 }
 
                 count++;
                 entries.add (e);
-                if (!scanner.has_next) {
+                if (scanner.peek_byte () == CONSTANT_POOL_END) {
                     break;
                 }
             }
