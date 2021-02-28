@@ -35,5 +35,5 @@ int main (string[] args) {
         Prz.ErrorReporter.fatal ((int) e.domain, e.message);
     }
 
-    return parser.code;
+    return 0;
 }

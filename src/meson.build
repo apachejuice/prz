@@ -29,5 +29,6 @@ executable(
   prz_sources,
   vala_args: ['--target-glib=2.50', '--pkg', 'linux'], # dependency('linux') won't work?
   dependencies: prz_deps,
+  vala_vapi: 'prz-1.0.vapi',
   install: true,
 )

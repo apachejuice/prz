@@ -1,4 +1,4 @@
-/* ByteScanner.vala
+/* byteparser.vala
  *
  * Copyright 2021 apachejuice <ubuntugeek1904@gmail.com>
  *
@@ -33,7 +33,6 @@ namespace Prz {
         public const uint8 CONSTANT_POOL_TYPE_TEXT = 0x89;
 
         private ByteScanner scanner;
-        public int code { get; private set; }
 
         private enum IntegerType {
             BYTE,
@@ -62,7 +61,7 @@ namespace Prz {
             }
         }
 
-        public void parse_bytes (string path) throws Error {
+        public Code parse_bytes (string path) throws Error {
             var bytes = read_file (path);
             scanner = new ByteScanner (bytes);
 
@@ -73,6 +72,8 @@ namespace Prz {
             }
 
             var pool = build_constant_pool ();
+
+            return new Code (pool);
         }
 
         private Pool build_constant_pool () throws FormatError {
@@ -109,7 +110,7 @@ namespace Prz {
                     var dest = read (IntegerType.INT);
                     e = new Pool.Entry.link (dest);
                 } else {
-                    throw new FormatError.INVALID ("Invalid constant pool entry type 0x%X", type);
+                    throw new FormatError.INVALID ("Invalid constant pool entry type 0x%X (Did you forget the constant pool end byte 0xBC?)", type);
                 }
 
                 count++;
