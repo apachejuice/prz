@@ -49,7 +49,11 @@ namespace Prz {
          *
          * @return The next byte as an {@link uint8}.
          */
-        public uint8 read_byte () requires (this.bytes.length - idx >= 1) {
+        public uint8 read_byte () throws FormatError {
+            if (this.bytes.length - idx < 1) {
+                throw new FormatError.EOF ("Expected 1 byte");
+            }
+
             return this.bytes[idx++];
         }
 
@@ -58,7 +62,11 @@ namespace Prz {
          *
          * @return The next 2 bytes as a {@link uint16}.
          */
-        public uint16 read_short () requires (this.bytes.length - idx >= 2) {
+        public uint16 read_short () throws FormatError {
+            if (this.bytes.length - idx < 2) {
+                throw new FormatError.EOF ("Expected 2 bytes");
+            }
+
             return
                 (((uint16) this.bytes[idx++]) << 8)
                 + ((uint16) this.bytes[idx++]);
@@ -69,7 +77,11 @@ namespace Prz {
          *
          * @return The next 4 bytes as a {@link uint32}.
          */
-        public uint32 read_int () requires (this.bytes.length - idx >= 4) {
+        public uint32 read_int () throws FormatError {
+            if (this.bytes.length - idx < 4) {
+                throw new FormatError.EOF ("Expected 4 bytes");
+            }
+
             return
                   (((uint32) this.bytes[idx++]) << 24)
                 + (((uint32) this.bytes[idx++]) << 16)
@@ -82,7 +94,7 @@ namespace Prz {
          *
          * @return The next byte as an {@link uint8}.
          */
-        public uint8 peek_byte () requires (this.bytes.length - idx >= 1) {
+        public uint8 peek_byte () {
             return this.bytes[idx];
         }
 
@@ -91,7 +103,11 @@ namespace Prz {
          *
          * @return The next 2 bytes as a {@link uint16}.
          */
-        public uint16 peek_short () requires (this.bytes.length - idx >= 2) {
+        public uint16 peek_short () throws FormatError {
+            if (this.bytes.length - idx < 2) {
+                throw new FormatError.EOF ("Expected 2 bytes");
+            }
+
             return
                 (((uint16) this.bytes[idx]) << 8)
                 + ((uint16) this.bytes[idx + 1]);
@@ -102,7 +118,11 @@ namespace Prz {
          *
          * @return The next 4 bytes as a {@link uint32}.
          */
-        public uint32 peek_int () requires (this.bytes.length - idx >= 4) {
+        public uint32 peek_int () throws FormatError {
+            if (this.bytes.length - idx < 4) {
+                throw new FormatError.EOF ("Expected 4 bytes");
+            }
+
             return
                   (((uint32) this.bytes[idx]) << 24)
                 + (((uint32) this.bytes[idx + 1]) << 16)

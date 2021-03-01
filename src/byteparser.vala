@@ -124,6 +124,10 @@ namespace Prz {
                 throw new FormatError.SEMANTIC ("Invalid constant pool length %d\n", entries.size);
             }
 
+            foreach (var e in entries) {
+                debug (e.to_string ());
+            }
+
             return new Pool (entries);
         }
 

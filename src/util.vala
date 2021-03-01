@@ -30,6 +30,8 @@ namespace Prz {
         public static uint32 byte_array_to_number (uint8[] arr) {
             var bp = new ByteScanner (arr);
 
+            // Here we can omit the `throws FormatError` from the function
+            // because we actually verify the size is sufficient.
             if (arr.length == 1) {
                 return bp.read_byte ();
             } else if (arr.length == 2) {
