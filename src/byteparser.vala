@@ -31,6 +31,11 @@ namespace Prz {
         public const uint8 CONSTANT_POOL_TYPE_LINK = 0x87;
         public const uint8 CONSTANT_POOL_TYPE_NUM = 0x88;
         public const uint8 CONSTANT_POOL_TYPE_TEXT = 0x89;
+        public const uint8 VERSION_MARKER = 0xEE;
+        public const uint8 SRC_NAME_MARKER = 0x50;
+
+        public const uint8 VERSION_0_1 = 0x10;
+        public const uint8[] VALID_VERSIONS = {VERSION_0_1};
 
         private ByteScanner scanner;
 
@@ -68,12 +73,67 @@ namespace Prz {
             // Verify the first 4 bytes as 0xBEEFCAFE
             uint32 magic;
             if ((magic = scanner.read_int ()) != MAGIC_VALUE) {
-                throw new FormatError.INVALID_MAGIC_BYTES ("Invalid magic value 0x0x%X".printf (magic));
+                throw new FormatError.INVALID_MAGIC_BYTES ("Invalid magic value 0x%X".printf (magic));
             }
 
+            var version = get_version ();
+            if (!(version in VALID_VERSIONS)) {
+                throw new FormatError.SEMANTIC ("Invalid version number %d, valid %s", version, get_valid_versions ());
+            } else {
+                debug ("Bytecode version: %d (0x%X, Pretzel %s)", version, version, get_version_string (version));
+            }
+
+            var source_name = get_source_name ();
+            debug ("Source filename: %s", source_name);
             var pool = build_constant_pool ();
 
-            return new Code (pool);
+            return new Code (pool, version, source_name);
+        }
+
+        private string get_source_name () throws FormatError {
+            accept (SRC_NAME_MARKER);
+            var len = read (IntegerType.INT);
+            var data = new uint8[len];
+
+            for (uint32 i = 0; i < len; i++) {
+                data[i] = (uint8) read (IntegerType.BYTE);
+            }
+
+            return Util.byte_array_to_string (data);
+        }
+
+        private string get_version_string (uint8 version) {
+            switch (version) {
+                case 16: return "0.1";
+                default: return (!) null;
+            }
+        }
+
+        private string get_valid_versions () {
+            var result = new StringBuilder ();
+            result.append ("version");
+            if (VALID_VERSIONS.length > 1) {
+                result.append ("s are ");
+            } else {
+                return result.str + " is %d".printf (VALID_VERSIONS[0]);
+            }
+
+            if (VALID_VERSIONS.length == 2) {
+                return result.str + "%d and %d".printf (VALID_VERSIONS[0], VALID_VERSIONS[1]);
+            } else {
+                var i = 0;
+                for (; i < VALID_VERSIONS.length - 2; i++) {
+                    result.append_printf ("%d, ", VALID_VERSIONS[i]);
+                }
+
+                result.append_printf ("%d and %d", VALID_VERSIONS[i], VALID_VERSIONS[i + 1]);
+                return result.str;
+            }
+        }
+
+        private uint8 get_version () throws FormatError {
+            accept (VERSION_MARKER);
+            return scanner.read_byte ();
         }
 
         private Pool build_constant_pool () throws FormatError {
@@ -81,8 +141,9 @@ namespace Prz {
             accept (CONSTANT_POOL_BEGIN);
             var count = 0;
 
-            while (read (IntegerType.BYTE) == CONSTANT_POOL_ENTRY) {
+            while (peek (IntegerType.BYTE) == CONSTANT_POOL_ENTRY) {
                 Pool.Entry? e = null;
+                scanner.read_byte ();
                 var len = read (IntegerType.INT);
                 var type = read (IntegerType.BYTE);
 
@@ -115,19 +176,19 @@ namespace Prz {
 
                 count++;
                 entries.add (e);
-                if (scanner.peek_byte () == CONSTANT_POOL_END) {
-                    break;
-                }
             }
 
+            accept (CONSTANT_POOL_END);
+
             if (count < MIN_POOL_ENTRIES_COUNT) {
-                throw new FormatError.SEMANTIC ("Invalid constant pool length %d\n", entries.size);
+                throw new FormatError.SEMANTIC ("Invalid constant pool length %d", entries.size);
             }
 
             foreach (var e in entries) {
-                debug (e.to_string ());
+                debug ("Constant pool: " + e.to_string ());
             }
 
+            debug ("Created constant pool, length %d", entries.size);
             return new Pool (entries);
         }
 

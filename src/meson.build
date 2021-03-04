@@ -24,10 +24,15 @@ configure_file(
   configuration: config_h,
 )
 
+valac_args = ['--target-glib=2.50', '--pkg', 'linux'] # dependency('linux') won't work?
+if get_option('debug')
+  valac_args += ['-g']
+endif
+
 executable(
   'prz',
   prz_sources,
-  vala_args: ['--target-glib=2.50', '--pkg', 'linux'], # dependency('linux') won't work?
+  vala_args: valac_args,
   dependencies: prz_deps,
   vala_vapi: 'prz-1.0.vapi',
   install: true,
