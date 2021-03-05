@@ -8,6 +8,7 @@ prz_sources = [
   'util.vala',
   'byteparser.vala',
   'code.vala',
+  'type.vala',
 ]
 
 prz_deps = [
@@ -25,7 +26,9 @@ configure_file(
 )
 
 valac_args = ['--target-glib=2.50', '--pkg', 'linux'] # dependency('linux') won't work?
-if get_option('debug')
+debugmode = get_option('debug')
+message('Debug = @0@'.format(debugmode))
+if debugmode
   valac_args += ['-g']
 endif
 

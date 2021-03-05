@@ -52,5 +52,35 @@ namespace Prz {
 
             return result.str;
         }
+
+        public static uint char_count (string s, char ch) {
+            uint count = 0;
+            foreach (var c in s.to_utf8 ()) {
+                if (c == ch) {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        public static string string_array_join (string sep, string[] arr) {
+            // GLib gets very mad if we use StringBuilder here?
+            var result = "";
+            for (var i = 0; i < arr.length - 1; i++) {
+                result += (arr[i]) + (sep);
+            }
+
+            return result + arr[arr.length - 1];
+        }
+
+        public static string repeat (string s, uint n) {
+            var result = new StringBuilder ();
+            for (var i = 0; i < n; i++) {
+                result.append (s);
+            }
+
+            return result.str;
+        }
     }
 }
