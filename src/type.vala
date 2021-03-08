@@ -78,13 +78,18 @@ namespace Prz {
         public static AbstractType parse (string sig) throws FormatError {
             assert (sig.length > 1);
             if (sig.has_prefix ("#")) {
-                assert (sig.length < 258);
+                if (sig[1] == ']') {
+                    throw new FormatError.SEMANTIC ("Missing type in primitive array declaration");
+                } else if (Util.char_count (sig, ']') > uint8.MAX) {
+                    throw new FormatError.SEMANTIC ("Exceeded maximum array depth: %d (%u)", uint8.MAX, Util.char_count (sig, ']'));
+                }
+
                 // We can unsafely cast since we already verified there cannot be more than 255 ]'s.
                 return new PrimitiveType (sig[1], (uint8) Util.char_count (sig, ']'));
             } else if (sig.has_prefix ("&")) {
                 var arrdepth = Util.char_count (sig, ']');
                 var _sig = sig.replace ("]", "");
-                var type = _sig[1:];
+                var type = _sig[1:_sig.length];
                 var segments = new string[uint8.MAX];
                 var parts = type.split ("/");
                 if (parts.length - 1 >= uint8.MAX) {

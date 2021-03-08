@@ -1,0 +1,1 @@
+option('debugmode', type : 'boolean', value : true, description : 'Debug build (include logging)')
