@@ -99,7 +99,7 @@ namespace Prz {
             var pool = build_constant_pool ();
             var constants = parse_constants ();
 
-            return new Code (pool, version, source_name);
+            return new Code (pool, version, source_name, constants);
         }
 
         private Gee.List<Constant> parse_constants () throws FormatError {
