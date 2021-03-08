@@ -33,6 +33,10 @@ namespace Prz {
         public const uint8 CONSTANT_POOL_TYPE_TEXT = 0x89;
         public const uint8 VERSION_MARKER = 0xEE;
         public const uint8 SRC_NAME_MARKER = 0x50;
+        public const uint8 TYPE_PRIMITIVE = 0x33;
+        public const uint8 TYPE_REFERENCE = 0x34;
+        public const uint8 CONSTANT_BEGIN = 0xC0;
+        public const uint8 ARRAY_MARKER = 0x5D;
 
         public const uint8 VERSION_0_1 = 0x10;
         public const uint8[] VALID_VERSIONS = {VERSION_0_1};
@@ -54,7 +58,9 @@ namespace Prz {
                 uint8[] buf = new uint8[size];
                 size_t read;
                 s.read_all (buf, out read);
+#if DEBUG
                 debug ("Read file %s, size %zu", path, read);
+#endif
                 s.close ();
                 return buf;
             } catch (FormatError e) {
@@ -79,27 +85,73 @@ namespace Prz {
             var version = get_version ();
             if (!(version in VALID_VERSIONS)) {
                 throw new FormatError.SEMANTIC ("Invalid version number %d, valid %s", version, get_valid_versions ());
-            } else {
+            }
+#if DEBUG
+            else {
                 debug ("Bytecode version: %d (0x%X, Pretzel %s)", version, version, get_version_string (version));
             }
+#endif
 
             var source_name = get_source_name ();
+#if DEBUG
             debug ("Source filename: %s", source_name);
+#endif
             var pool = build_constant_pool ();
+            var constants = parse_constants ();
 
             return new Code (pool, version, source_name);
         }
 
-        private string get_source_name () throws FormatError {
-            accept (SRC_NAME_MARKER);
+        private Gee.List<Constant> parse_constants () throws FormatError {
+            var constants = new Gee.ArrayList<Constant> ();
+
+            while (peek (IntegerType.BYTE) == CONSTANT_BEGIN) {
+                accept (CONSTANT_BEGIN);
+                var name = parse_name ();
+                var idx = read (IntegerType.INT);
+                var type = parse_type ();
+                var c = new Constant (idx, type, name);
+                constants.add (c);
+#if DEBUG
+                debug ("Found constant %s", c.to_string ());
+#endif
+            }
+
+            return constants;
+        }
+
+        private string parse_name () throws FormatError {
             var len = read (IntegerType.INT);
             var data = new uint8[len];
 
             for (uint32 i = 0; i < len; i++) {
-                data[i] = (uint8) read (IntegerType.BYTE);
+                data[i] = (uint8) read (IntegerType.BYTE); 
             }
 
             return Util.byte_array_to_string (data);
+        }
+
+        private AbstractType parse_type () throws FormatError {
+            var type = (uint8) read (IntegerType.BYTE);
+            if (type == TYPE_PRIMITIVE) {                
+                var typename = new uint8[] {(uint8) read (IntegerType.BYTE), (uint8) read (IntegerType.BYTE)};
+                var arrdepth = 0;
+                while (peek (IntegerType.BYTE) == ARRAY_MARKER) {
+                    read (IntegerType.BYTE);
+                    arrdepth++;
+                }
+
+                return AbstractType.parse (Util.byte_array_to_string (typename) + Util.repeat ("]", arrdepth));
+            } else if (type == TYPE_REFERENCE) {
+                return AbstractType.parse ("&" + parse_name ());
+            } else {
+                throw new FormatError.INVALID ("Invalid type indentifier byte 0x%X", type);
+            }
+        }
+
+        private string get_source_name () throws FormatError {
+            accept (SRC_NAME_MARKER);
+            return parse_name ();
         }
 
         private string get_version_string (uint8 version) {
@@ -184,11 +236,13 @@ namespace Prz {
                 throw new FormatError.SEMANTIC ("Invalid constant pool length %d", entries.size);
             }
 
+#if DEBUG
             foreach (var e in entries) {
                 debug ("Constant pool: " + e.to_string ());
             }
 
             debug ("Created constant pool, length %d", entries.size);
+#endif
             return new Pool (entries);
         }
 

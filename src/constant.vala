@@ -1,35 +1,39 @@
-/* code.vala
- *
+/*
+ * type.vala
+ * 
  * Copyright 2021 apachejuice <ubuntugeek1904@gmail.com>
- *
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
+ * 
  * SPDX-License-Identifier: Apache-2.0
+ * 
  */
+using GLib;
 
 namespace Prz {
-    public class Code : Object {
-        public Pool constant_pool { get; private set; }
-        public uint8 bytecode_version { get; private set; }
-        public string source_name { get; private set; }
-        public Gee.List<Constant> constants { get; private set; }
+    public class Constant : Object {
+        public uint index_ref { get; private set; }
+        public AbstractType c_type { get; private set; }
+        public string name { get; private set; }
 
-        public Code (Pool constant_pool, uint8 bytecode_version,
-                     string source_name, Gee.List<Constant> constants) {
-            this.constant_pool = constant_pool;
-            this.bytecode_version = bytecode_version;
-            this.source_name = source_name;
-            this.constants = constants;
+        public Constant (uint index_ref, AbstractType c_type, string name) {
+            this.index_ref = index_ref;
+            this.c_type = c_type;
+            this.name = name;
+        }
+
+        public string to_string () {
+            return "Constant[idx=0x%X signature=%s name=%s]".printf (index_ref, c_type.signature, name);
         }
     }
 }
