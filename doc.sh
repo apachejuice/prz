@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-PKG_NAME="prz"
-PKG_VER="1.0"
+PKG_NAME="prvm"
+PKG_VER="0.1"
 if [ -z "$2" ]; then
     SRCDIR="src"
 else

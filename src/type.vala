@@ -76,7 +76,11 @@ namespace Prz {
         } 
 
         public static AbstractType parse (string sig) throws FormatError {
-            assert (sig.length > 1);
+            // sig.length > 1
+            if (sig.length <= 1) {
+                throw new FormatError.SEMANTIC ("Signature length too short: %d", sig.length);
+            }
+
             if (sig.has_prefix ("#")) {
                 if (sig[1] == ']') {
                     throw new FormatError.SEMANTIC ("Missing type in primitive array declaration");

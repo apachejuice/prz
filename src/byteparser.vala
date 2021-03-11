@@ -31,8 +31,6 @@ namespace Prz {
         public const uint8 CONSTANT_POOL_TYPE_LINK = 0x87;
         public const uint8 CONSTANT_POOL_TYPE_NUM = 0x88;
         public const uint8 CONSTANT_POOL_TYPE_TEXT = 0x89;
-        public const uint8 VERSION_MARKER = 0xEE;
-        public const uint8 SRC_NAME_MARKER = 0x50;
         public const uint8 TYPE_PRIMITIVE = 0x33;
         public const uint8 TYPE_REFERENCE = 0x34;
         public const uint8 CONSTANT_BEGIN = 0xC0;
@@ -97,27 +95,12 @@ namespace Prz {
             debug ("Source filename: %s", source_name);
 #endif
             var pool = build_constant_pool ();
-            var constants = parse_constants ();
 
-            return new Code (pool, version, source_name, constants);
-        }
-
-        private Gee.List<Constant> parse_constants () throws FormatError {
-            var constants = new Gee.ArrayList<Constant> ();
-
-            while (peek (IntegerType.BYTE) == CONSTANT_BEGIN) {
-                accept (CONSTANT_BEGIN);
-                var name = parse_name ();
-                var idx = read (IntegerType.INT);
-                var type = parse_type ();
-                var c = new Constant (idx, type, name);
-                constants.add (c);
-#if DEBUG
-                debug ("Found constant %s", c.to_string ());
-#endif
+            if (scanner.has_next) {
+                throw new FormatError.INVALID ("Unexpected bytes at end of file");
             }
 
-            return constants;
+            return new Code (pool, version, source_name);
         }
 
         private string parse_name () throws FormatError {
@@ -150,7 +133,6 @@ namespace Prz {
         }
 
         private string get_source_name () throws FormatError {
-            accept (SRC_NAME_MARKER);
             return parse_name ();
         }
 
@@ -184,7 +166,6 @@ namespace Prz {
         }
 
         private uint8 get_version () throws FormatError {
-            accept (VERSION_MARKER);
             return scanner.read_byte ();
         }
 

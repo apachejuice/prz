@@ -1,4 +1,4 @@
-prz_sources = [
+prvm_sources = [
   'main.vala',
   'bytescanner.vala',
   'formaterror.vala',
@@ -12,7 +12,7 @@ prz_sources = [
   'constant.vala',
 ]
 
-prz_deps = [
+prvm_deps = [
   dependency('gio-2.0', version: '>= 2.50'),
   dependency('gee-0.8'),
 ]
@@ -34,10 +34,10 @@ if debugmode
 endif
 
 executable(
-  'prz',
-  prz_sources,
+  'prvm',
+  prvm_sources,
   vala_args: valac_args,
-  dependencies: prz_deps,
-  vala_vapi: 'prz-1.0.vapi',
+  dependencies: prvm_deps,
+  vala_vapi: 'prvm-1.0.vapi',
   install: true,
 )

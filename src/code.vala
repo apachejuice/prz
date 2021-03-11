@@ -22,14 +22,12 @@ namespace Prz {
         public Pool constant_pool { get; private set; }
         public uint8 bytecode_version { get; private set; }
         public string source_name { get; private set; }
-        public Gee.List<Constant> constants { get; private set; }
 
         public Code (Pool constant_pool, uint8 bytecode_version,
-                     string source_name, Gee.List<Constant> constants) {
+                     string source_name) {
             this.constant_pool = constant_pool;
             this.bytecode_version = bytecode_version;
             this.source_name = source_name;
-            this.constants = constants;
         }
     }
 }
