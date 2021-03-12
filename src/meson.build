@@ -10,6 +10,7 @@ prvm_sources = [
   'code.vala',
   'type.vala',
   'constant.vala',
+  'function.vala',
 ]
 
 prvm_deps = [
@@ -27,11 +28,6 @@ configure_file(
 )
 
 valac_args = ['--target-glib=2.50', '--pkg', 'linux'] # dependency('linux') won't work?
-debugmode = get_option('debugmode')
-message('Debug = @0@'.format(debugmode))
-if debugmode
-  valac_args += ['-g', '-D', 'DEBUG']
-endif
 
 executable(
   'prvm',

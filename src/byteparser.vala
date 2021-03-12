@@ -24,7 +24,7 @@ namespace Prz {
      */
     public class ByteParser : Object {
         public const int64 MAGIC_VALUE = 0xBEEFCAFE;
-        public const int MIN_POOL_ENTRIES_COUNT = 0x01;
+        public const int MIN_POOL_ENTRIES_COUNT = 0x02;
         public const uint8 CONSTANT_POOL_BEGIN = 0xCB;
         public const uint8 CONSTANT_POOL_END = 0xBC;
         public const uint8 CONSTANT_POOL_ENTRY = 0xE0;
@@ -35,6 +35,7 @@ namespace Prz {
         public const uint8 TYPE_REFERENCE = 0x34;
         public const uint8 CONSTANT_BEGIN = 0xC0;
         public const uint8 ARRAY_MARKER = 0x5D;
+        public const uint8 FUNCTION_BEGIN = 0xF0;
 
         public const uint8 VERSION_0_1 = 0x10;
         public const uint8[] VALID_VERSIONS = {VERSION_0_1};
@@ -56,9 +57,6 @@ namespace Prz {
                 uint8[] buf = new uint8[size];
                 size_t read;
                 s.read_all (buf, out read);
-#if DEBUG
-                debug ("Read file %s, size %zu", path, read);
-#endif
                 s.close ();
                 return buf;
             } catch (FormatError e) {
@@ -80,21 +78,26 @@ namespace Prz {
                 throw new FormatError.INVALID_MAGIC_BYTES ("Invalid magic value 0x%X".printf (magic));
             }
 
-            var version = get_version ();
+            var pool = build_constant_pool ();
+            var version = (uint8) Util.byte_array_to_number (pool.get (0).raw_data);
             if (!(version in VALID_VERSIONS)) {
                 throw new FormatError.SEMANTIC ("Invalid version number %d, valid %s", version, get_valid_versions ());
             }
-#if DEBUG
-            else {
-                debug ("Bytecode version: %d (0x%X, Pretzel %s)", version, version, get_version_string (version));
-            }
-#endif
 
-            var source_name = get_source_name ();
-#if DEBUG
-            debug ("Source filename: %s", source_name);
-#endif
-            var pool = build_constant_pool ();
+            var source_name = Util.byte_array_to_string (pool.get (1).raw_data);
+            var functions = new Gee.ArrayList<Function> ();
+
+            uint8 n;
+            switch (n = (uint8) peek (IntegerType.BYTE)) {
+                case FUNCTION_BEGIN: {
+                    functions.add (parse_function ());
+                    break;
+                }
+
+                default: {
+                    throw new FormatError.INVALID ("Unexpected 0x%X", n);
+                }
+            }
 
             if (scanner.has_next) {
                 throw new FormatError.INVALID ("Unexpected bytes at end of file");
@@ -103,44 +106,12 @@ namespace Prz {
             return new Code (pool, version, source_name);
         }
 
-        private string parse_name () throws FormatError {
-            var len = read (IntegerType.INT);
-            var data = new uint8[len];
-
-            for (uint32 i = 0; i < len; i++) {
-                data[i] = (uint8) read (IntegerType.BYTE); 
-            }
-
-            return Util.byte_array_to_string (data);
-        }
-
-        private AbstractType parse_type () throws FormatError {
-            var type = (uint8) read (IntegerType.BYTE);
-            if (type == TYPE_PRIMITIVE) {                
-                var typename = new uint8[] {(uint8) read (IntegerType.BYTE), (uint8) read (IntegerType.BYTE)};
-                var arrdepth = 0;
-                while (peek (IntegerType.BYTE) == ARRAY_MARKER) {
-                    read (IntegerType.BYTE);
-                    arrdepth++;
-                }
-
-                return AbstractType.parse (Util.byte_array_to_string (typename) + Util.repeat ("]", arrdepth));
-            } else if (type == TYPE_REFERENCE) {
-                return AbstractType.parse ("&" + parse_name ());
-            } else {
-                throw new FormatError.INVALID ("Invalid type indentifier byte 0x%X", type);
-            }
-        }
-
-        private string get_source_name () throws FormatError {
-            return parse_name ();
-        }
-
-        private string get_version_string (uint8 version) {
-            switch (version) {
-                case 16: return "0.1";
-                default: return (!) null;
-            }
+        private Function parse_function () throws FormatError {
+            accept (FUNCTION_BEGIN);
+            var arity = read (IntegerType.INT);
+            var name_ref = read (IntegerType.INT);
+            var sig_ref = read (IntegerType.INT);
+            return new Function (name_ref, arity, sig_ref);
         }
 
         private string get_valid_versions () {
@@ -165,10 +136,6 @@ namespace Prz {
             }
         }
 
-        private uint8 get_version () throws FormatError {
-            return scanner.read_byte ();
-        }
-
         private Pool build_constant_pool () throws FormatError {
             var entries = new Gee.ArrayList<Pool.Entry> ();
             accept (CONSTANT_POOL_BEGIN);
@@ -181,6 +148,10 @@ namespace Prz {
                 var type = read (IntegerType.BYTE);
 
                 if (type == CONSTANT_POOL_TYPE_TEXT) {
+                    if (count == 0) {
+                        throw new FormatError.SEMANTIC ("Constant pool entry 1 must be a byte");
+                    }
+
                     var data = new uint8[len];
                     for (uint32 i = 0; i < len; i++) {
                         data[i] = (uint8) read (IntegerType.BYTE);
@@ -188,6 +159,14 @@ namespace Prz {
 
                     e = new Pool.Entry (data, count);
                 } else if (type == CONSTANT_POOL_TYPE_NUM) {
+                    if (count == 0 && len != 1) {
+                        throw new FormatError.SEMANTIC ("Constant pool entry 1 must be a byte");
+                    }
+
+                    if (count == 1) {
+                        throw new FormatError.SEMANTIC ("Constant pool entry 2 must be UTF-8 data");
+                    }
+
                     uint32 num;
                     if (len == 1) {
                         num = read (IntegerType.BYTE);
@@ -216,14 +195,7 @@ namespace Prz {
             if (count < MIN_POOL_ENTRIES_COUNT) {
                 throw new FormatError.SEMANTIC ("Invalid constant pool length %d", entries.size);
             }
-
-#if DEBUG
-            foreach (var e in entries) {
-                debug ("Constant pool: " + e.to_string ());
-            }
-
-            debug ("Created constant pool, length %d", entries.size);
-#endif
+            
             return new Pool (entries);
         }
 
