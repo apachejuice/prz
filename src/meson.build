@@ -1,5 +1,4 @@
 prvm_sources = [
-  'main.vala',
   'bytescanner.vala',
   'formaterror.vala',
   'error.vala',
@@ -9,7 +8,6 @@ prvm_sources = [
   'byteparser.vala',
   'code.vala',
   'type.vala',
-  'constant.vala',
   'function.vala',
 ]
 
@@ -29,11 +27,21 @@ configure_file(
 
 valac_args = ['--target-glib=2.50', '--pkg', 'linux'] # dependency('linux') won't work?
 
-executable(
+shared_library(
   'prvm',
   prvm_sources,
   vala_args: valac_args,
   dependencies: prvm_deps,
   vala_vapi: 'prvm-1.0.vapi',
+  install: true,
+)
+
+# We sadly can't link with the library above
+# because vala-language-server won't pick it up :(
+executable(
+  'prvm',
+  prvm_sources + ['main.vala'],
+  vala_args: valac_args,
+  dependencies: prvm_deps,
   install: true,
 )
