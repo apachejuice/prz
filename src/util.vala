@@ -27,11 +27,9 @@ namespace Prz {
             return result;
         }
 
-        public static uint32 byte_array_to_number (uint8[] arr) {
+        public static uint32 byte_array_to_number (uint8[] arr) throws FormatError {
             var bp = new ByteScanner (arr);
 
-            // Here we can omit the `throws FormatError` from the function
-            // because we actually verify the size is sufficient.
             if (arr.length == 1) {
                 return bp.read_byte ();
             } else if (arr.length == 2) {
@@ -39,8 +37,7 @@ namespace Prz {
             } else if (arr.length == 4) {
                 return bp.read_int ();
             } else {
-                stdout.printf ("Cannot read number from %d bytes\n", arr.length);
-                Process.exit (1);
+                throw new FormatError.INVALID ("Cannot read number from %d bytes\n", arr.length);
             }
         }
 

@@ -25,6 +25,12 @@ namespace Prz {
      * and other types of immutable data.
      */
     public class Pool : Object {
+        public enum EntryType {
+            UTF_8,
+            NUMBER,
+            LINK,
+        }
+
         /**
          * A single entry in the {@link Pool} is a piece
          * of data contained in it.
@@ -56,6 +62,8 @@ namespace Prz {
              */
             public bool is_link { get; private set; default = false; }
 
+            public EntryType e_type { get; private set; }
+
             /**
              * Create a new Entry from the bytes in ``data.``
              *
@@ -66,6 +74,7 @@ namespace Prz {
             public Entry (uint8[] data, uint index) {
                 this.raw_data = data;
                 this.index = index;
+                this.e_type = EntryType.UTF_8;
             }
 
             public Entry.number (uint32 num, uint index) {
@@ -88,10 +97,12 @@ namespace Prz {
                 }
 
                 this (arr, index);
+                this.e_type = EntryType.NUMBER;
             }
 
             public Entry.link (uint32 dest) {
                 this ({}, dest);
+                this.e_type = EntryType.LINK;
             }
 
             /**
@@ -106,11 +117,20 @@ namespace Prz {
             public string to_string () {
                 var result = new StringBuilder ();
                 result.append (@"Entry[len=$len index=$index can_be_number=$can_be_number value={");
-                for (var i = 0; i < raw_data.length - 1; i++) {
-                    result.append ("0x%X, ".printf (raw_data[i]));
+                if (raw_data.length <= 10) {
+                    for (var i = 0; i < raw_data.length - 1; i++) {
+                        result.append ("0x%X, ".printf (raw_data[i]));
+                    }
+
+                    result.append ("0x%X}".printf (raw_data[raw_data.length - 1]));
+                } else {
+                    var len = raw_data.length;
+                    result.append ("0x%X, 0x%X, 0x%X ... 0x%X, 0x%X, 0x%X}".printf (
+                        raw_data[0], raw_data[1], raw_data[2],
+                        raw_data[len - 3], raw_data[len - 2], raw_data[len - 1]
+                    ));
                 }
 
-                result.append ("0x%X}".printf (raw_data[raw_data.length - 1]));
                 if (can_be_number) {
                     result.append (@" as_number=$(Util.byte_array_to_number (raw_data))]");
                 } else {

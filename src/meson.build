@@ -9,6 +9,9 @@ prvm_sources = [
   'code.vala',
   'type.vala',
   'function.vala',
+  'vm.vala',
+  'stack.vala',
+  'vmerror.vala',
 ]
 
 prvm_deps = [
@@ -18,6 +21,8 @@ prvm_deps = [
 
 config_h = configuration_data()
 config_h.set('platform', build_machine.system())
+config_h.set('name', meson.project_name())
+config_h.set('ver', meson.project_version())
 
 configure_file(
   input: 'config.h.in',

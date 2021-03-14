@@ -1,4 +1,4 @@
-/* config.vapi
+/* function.vala
  *
  * Copyright 2021 apachejuice <ubuntugeek1904@gmail.com>
  *
@@ -16,9 +16,20 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-[CCode (cprefix = "", lower_case_cprefix = "", cheader_filename = "config.h")]
-namespace Prz.Config {
-    public const string PLATFORM;
-    public const string PKGNAME;
-    public const string PKGVER;
+using GLib;
+
+namespace Prz {
+    public class Function : Object {
+        public uint32 name_ref { get; private set; }
+        public uint8 arity { get; private set; }
+        public uint32 sig_ref { get; private set; }
+        public Gee.List<Instruction?> code { get; private set; }
+
+        public Function (uint32 name_ref, uint8 arity, uint32 sig_ref, Gee.List<Instruction> code) {
+            this.name_ref = name_ref;
+            this.arity = arity;
+            this.sig_ref = sig_ref;
+            this.code = code;
+        }
+    }
 }

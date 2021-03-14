@@ -1,1 +1,3 @@
 #define PLATFORM "@platform@"
+#define PKGNAME "@name@"
+#define PKGVER "@ver@"

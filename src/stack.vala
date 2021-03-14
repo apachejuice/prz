@@ -1,4 +1,4 @@
-/* config.vapi
+/* formaterror.vala
  *
  * Copyright 2021 apachejuice <ubuntugeek1904@gmail.com>
  *
@@ -16,9 +16,23 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-[CCode (cprefix = "", lower_case_cprefix = "", cheader_filename = "config.h")]
-namespace Prz.Config {
-    public const string PLATFORM;
-    public const string PKGNAME;
-    public const string PKGVER;
+using GLib;
+
+namespace Prz {
+    public class Stack<T> : Gee.ArrayList<T> {
+        public T push (T e) {
+            add (e);
+            return e;
+        }
+
+        public T pop () {
+            var result = last ();
+            remove (result);
+            return result;
+        }
+
+        public T peek () {
+            return last ();
+        }
+    }
 }

@@ -19,10 +19,28 @@
 using GLib;
 
 namespace Prz {
+    public class Instruction {
+        public uint8 opcode { get; private set; }
+        public SourceLoc? loc { get; private set; }
+        public uint32[] args { get; private set; }
+
+        public Instruction (uint8 opcode, SourceLoc? loc = null, uint32[] args = {}) {
+            this.opcode = opcode;
+            this.loc = loc;
+            this.args = args;
+        }
+    }
+
+    public struct SourceLoc {
+        string file;
+        uint32 line;
+    }
+
     /**
      * The ByteParser builds a {@link Code} out of input bytes.
      */
     public class ByteParser : Object {
+        // Marker bytes
         public const int64 MAGIC_VALUE = 0xBEEFCAFE;
         public const int MIN_POOL_ENTRIES_COUNT = 0x02;
         public const uint8 CONSTANT_POOL_BEGIN = 0xCB;
@@ -36,11 +54,32 @@ namespace Prz {
         public const uint8 CONSTANT_BEGIN = 0xC0;
         public const uint8 ARRAY_MARKER = 0x5D;
         public const uint8 FUNCTION_BEGIN = 0xF0;
+        public const uint8 SOURCE_LOC_TAG = 0x99;
+        public const uint8 SOURCE_LOC_TABLE_TAG = 0x11;
+
+        // Instructions
+        /* Stack controls */
+        public const uint8 OP_DYNSTACK = 0x01;
+        public const uint8 OP_MAXSTACK = 0x02;
+
+        /* Integer operations */
+        public const uint8 OP_IPUSH = 0x03;
+        public const uint8 OP_IADD = 0x04;
+        public const uint8 OP_ISUB = 0x05;
+        public const uint8 OP_IDIV = 0x06;
+        public const uint8 OP_IMUL = 0x07;
+        public const uint8 OP_IMOD = 0x08;
+
+        /* Others */
+        public const uint8 OP_POP = 0x09;
+        public const uint8 OP_DUP = 0x10;
+        public const uint8 OP_ROT = 0x11;
 
         public const uint8 VERSION_0_1 = 0x10;
         public const uint8[] VALID_VERSIONS = {VERSION_0_1};
 
         private ByteScanner scanner;
+        private string source_name;
 
         private enum IntegerType {
             BYTE,
@@ -48,11 +87,11 @@ namespace Prz {
             INT,
         }
 
-        private uint8[]? read_file (string path) throws Error {
+        private uint8[]? read_file (string path) {
             var f = File.new_for_path (path);
-            var size = f.query_info ("standard::size", 0).get_size ();
 
             try {
+                var size = f.query_info ("standard::size", 0).get_size ();
                 var s = f.read ();
                 uint8[] buf = new uint8[size];
                 size_t read;
@@ -61,14 +100,14 @@ namespace Prz {
                 return buf;
             } catch (FormatError e) {
                 stdout.printf ("I/O error while reading file %s: %s\n", path, e.message);
-                Process.exit (21);
+                Process.exit (1);
             } catch (Error e) {
                 stdout.printf ("Error while reading file %s: %s\n", path, e.message);
-                Process.exit (21);
+                Process.exit (1);
             }
         }
 
-        public Code parse_bytes (string path) throws Error {
+        public Code parse_bytes (string path) throws FormatError {
             var bytes = read_file (path);
             scanner = new ByteScanner (bytes);
 
@@ -84,34 +123,77 @@ namespace Prz {
                 throw new FormatError.SEMANTIC ("Invalid version number %d, valid %s", version, get_valid_versions ());
             }
 
-            var source_name = Util.byte_array_to_string (pool.get (1).raw_data);
+            var source_name = this.source_name = Util.byte_array_to_string (pool.get (1).raw_data);
             var functions = new Gee.ArrayList<Function> ();
 
-            uint8 n;
-            switch (n = (uint8) peek (IntegerType.BYTE)) {
-                case FUNCTION_BEGIN: {
-                    functions.add (parse_function ());
-                    break;
-                }
+            while (scanner.has_next) {
+                uint8 n;
+                switch (n = (uint8) peek (IntegerType.BYTE)) {
+                    case FUNCTION_BEGIN: {
+                        functions.add (parse_function ());
+                        break;
+                    }
 
-                default: {
-                    throw new FormatError.INVALID ("Unexpected 0x%X", n);
+                    default: {
+                        throw new FormatError.INVALID ("Unexpected 0x%X", n);
+                    }
                 }
             }
 
-            if (scanner.has_next) {
-                throw new FormatError.INVALID ("Unexpected bytes at end of file");
-            }
-
-            return new Code (pool, version, source_name);
+            return new Code (pool, version, source_name, functions);
         }
 
         private Function parse_function () throws FormatError {
             accept (FUNCTION_BEGIN);
-            var arity = read (IntegerType.INT);
+            var arity = (uint8) read (IntegerType.BYTE);
             var name_ref = read (IntegerType.INT);
             var sig_ref = read (IntegerType.INT);
-            return new Function (name_ref, arity, sig_ref);
+            var code_len = read (IntegerType.INT);
+            return new Function (name_ref, arity, sig_ref, parse_function_body (read_nbytes (code_len)));
+        }
+
+        private Gee.ArrayList<Instruction> parse_function_body (uint8[] body) throws FormatError {
+            var body_scanner = new ByteScanner (body);
+            var instructions = new Gee.ArrayList<Instruction> ();
+
+            while (body_scanner.has_next) {
+                SourceLoc? source_loc = null;
+
+                uint8 b;
+                Instruction i;
+                switch (b = body_scanner.read_byte ()) {
+                    case OP_POP:
+                    case OP_DUP:
+                    case OP_IADD:
+                    case OP_IDIV:
+                    case OP_IMOD:
+                    case OP_IMUL:
+                    case OP_ISUB:
+                    case OP_ROT:
+                    case OP_DYNSTACK: {
+                        i = new Instruction (b, source_loc);
+                        break;
+                    }
+
+                    case OP_MAXSTACK: {
+                        i = new Instruction (b, source_loc, {body_scanner.read_short ()});
+                        break;
+                    }
+
+                    case OP_IPUSH: {
+                        i = new Instruction (b, source_loc, {body_scanner.read_int ()});
+                        break;
+                    }
+
+                    default: {
+                        throw new FormatError.INVALID ("Unknown opcode 0x%X", b);
+                    }
+                }
+
+                instructions.add (i);
+            }
+
+            return instructions;
         }
 
         private string get_valid_versions () {
@@ -195,8 +277,17 @@ namespace Prz {
             if (count < MIN_POOL_ENTRIES_COUNT) {
                 throw new FormatError.SEMANTIC ("Invalid constant pool length %d", entries.size);
             }
-            
+
             return new Pool (entries);
+        }
+
+        private uint8[] read_nbytes (uint32 nbytes) throws FormatError {
+            var result = new uint8[nbytes];
+            for (uint32 i = 0; i < nbytes; i++) {
+                result[i] = (uint8) read (IntegerType.BYTE);
+            }
+
+            return result;
         }
 
         private void accept (uint32 num) throws FormatError, FormatError {

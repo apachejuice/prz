@@ -17,23 +17,55 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+namespace Prz {
+    public class Main : Object {
+        private static bool version = false;
 
-/**
- * The entry point for the ByteParser.
- */
-int main (string[] args) {
-    // Make sure GLib uses the correct locale
-    Intl.setlocale (LocaleCategory.ALL);
+        private const OptionEntry[] entries = {
+            { "version", 'v', 0, OptionArg.NONE, ref version, "Show the version and exit", null },
+            { null },
+        };
 
-    var parser = new Prz.ByteParser ();
-    try {
-        parser.parse_bytes (args[1]);
-    } catch (Prz.FormatError e) {
-        stdout.printf ("An error occurred while validating the file format: %s\n", e.message);
-        Process.exit (22);
-    } catch (Error e) {
-        Prz.ErrorReporter.fatal ((int) e.domain, e.message);
+       /**
+        * The entry point for the VM.
+        */
+        public static int main (string[] args) {
+            // Make sure GLib uses the correct locale
+            Intl.setlocale (LocaleCategory.ALL);
+
+            // parse options
+            var ctx = new OptionContext ();
+            ctx.add_main_entries (entries, null);
+            try {
+                ctx.parse (ref args);
+            } catch (OptionError e) {
+                stderr.printf ("%s\n", e.message);
+                Process.exit (1);
+            }
+
+            run_options ();
+
+            var parser = new Prz.ByteParser ();
+            try {
+                var code = parser.parse_bytes (args[1]);
+                var vm = new VM (code);
+                vm.run ();
+            } catch (Prz.FormatError e) {
+                stdout.printf ("An error occurred while validating the file format: %s\n", e.message);
+                Process.exit (1);
+            } catch (Prz.VMError e) {
+                stdout.printf ("An error occurred running the VM: %s\n", e.message);
+                Process.exit (1);
+            }
+
+            return 0;
+        }
+
+        private static void run_options () {
+            if (version) {
+                stdout.printf ("%s %s", Config.PKGNAME, Config.PKGVER);
+                Process.exit (0);
+            }
+        }
     }
-
-    return 0;
 }

@@ -94,7 +94,11 @@ namespace Prz {
          *
          * @return The next byte as an {@link uint8}.
          */
-        public uint8 peek_byte () {
+        public uint8 peek_byte () throws FormatError {
+            if (this.bytes.length - idx < 1) {
+                throw new FormatError.EOF ("Expected 1 byte");
+            }
+            
             return this.bytes[idx];
         }
 
