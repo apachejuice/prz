@@ -60,47 +60,47 @@ namespace Prz {
                 var args = f.code[i].args;
                 stdout.printf ("locals: %s\n", locals_to_string (locals));
                 switch (f.code[i].opcode) {
-                    case ByteParser.OP_IPUSH: {
+                    case OpCode.IPUSH: {
                         locals.push ((int32) args[0]);
                         break;
                     }
 
-                    case ByteParser.OP_DUP: {
+                    case OpCode.DUP: {
                         locals.push (locals.peek ());
                         break;
                     }
 
-                    case ByteParser.OP_IADD: {
+                    case OpCode.IADD: {
                         locals.push (locals.pop() + locals.pop ());
                         break;
                     }
 
-                    case ByteParser.OP_IDIV: {
+                    case OpCode.IDIV: {
                         locals.push (locals.pop () / locals.pop ());
                         break;
                     }
 
-                    case ByteParser.OP_IMUL: {
+                    case OpCode.IMUL: {
                         locals.push (locals.pop () * locals.pop ());
                         break;
                     }
 
-                    case ByteParser.OP_IMOD: {
+                    case OpCode.IMOD: {
                         locals.push (locals.pop () % locals.pop ());
                         break;
                     }
 
-                    case ByteParser.OP_ISUB: {
+                    case OpCode.ISUB: {
                         locals.push (locals.pop () - locals.pop ());
                         break;
                     }
 
-                    case ByteParser.OP_POP: {
+                    case OpCode.POP: {
                         locals.pop ();
                         break;
                     }
 
-                    case ByteParser.OP_ROT: {
+                    case OpCode.ROT: {
                         var first = locals.pop ();
                         var second = locals.pop ();
                         locals.push (first);

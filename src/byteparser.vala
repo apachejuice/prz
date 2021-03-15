@@ -57,24 +57,6 @@ namespace Prz {
         public const uint8 SOURCE_LOC_TAG = 0x99;
         public const uint8 SOURCE_LOC_TABLE_TAG = 0x11;
 
-        // Instructions
-        /* Stack controls */
-        public const uint8 OP_DYNSTACK = 0x01;
-        public const uint8 OP_MAXSTACK = 0x02;
-
-        /* Integer operations */
-        public const uint8 OP_IPUSH = 0x03;
-        public const uint8 OP_IADD = 0x04;
-        public const uint8 OP_ISUB = 0x05;
-        public const uint8 OP_IDIV = 0x06;
-        public const uint8 OP_IMUL = 0x07;
-        public const uint8 OP_IMOD = 0x08;
-
-        /* Others */
-        public const uint8 OP_POP = 0x09;
-        public const uint8 OP_DUP = 0x10;
-        public const uint8 OP_ROT = 0x11;
-
         public const uint8 VERSION_0_1 = 0x10;
         public const uint8[] VALID_VERSIONS = {VERSION_0_1};
 
@@ -162,25 +144,25 @@ namespace Prz {
                 uint8 b;
                 Instruction i;
                 switch (b = body_scanner.read_byte ()) {
-                    case OP_POP:
-                    case OP_DUP:
-                    case OP_IADD:
-                    case OP_IDIV:
-                    case OP_IMOD:
-                    case OP_IMUL:
-                    case OP_ISUB:
-                    case OP_ROT:
-                    case OP_DYNSTACK: {
+                    case OpCode.POP:
+                    case OpCode.DUP:
+                    case OpCode.IADD:
+                    case OpCode.IDIV:
+                    case OpCode.IMOD:
+                    case OpCode.IMUL:
+                    case OpCode.ISUB:
+                    case OpCode.ROT:
+                    case OpCode.DYNSTACK: {
                         i = new Instruction (b, source_loc);
                         break;
                     }
 
-                    case OP_MAXSTACK: {
+                    case OpCode.MAXSTACK: {
                         i = new Instruction (b, source_loc, {body_scanner.read_short ()});
                         break;
                     }
 
-                    case OP_IPUSH: {
+                    case OpCode.IPUSH: {
                         i = new Instruction (b, source_loc, {body_scanner.read_int ()});
                         break;
                     }
