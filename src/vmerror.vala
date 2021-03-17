@@ -22,5 +22,8 @@ namespace Prz {
     public errordomain VMError {
         MISSING_CP_REF,
         UNIMPLEMENTED,
+        NO_MAIN_METHOD,
+        WRONG_TYPE,
+        INTERNAL,
     }
 }

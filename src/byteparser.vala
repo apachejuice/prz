@@ -96,7 +96,7 @@ namespace Prz {
             // Verify the first 4 bytes as 0xBEEFCAFE
             uint32 magic;
             if ((magic = scanner.read_int ()) != MAGIC_VALUE) {
-                throw new FormatError.INVALID_MAGIC_BYTES ("Invalid magic value 0x%X".printf (magic));
+                throw new FormatError.INVALID_MAGIC_BYTES ("Invalid magic value 0x%08X".printf (magic));
             }
 
             var pool = build_constant_pool ();
@@ -117,7 +117,7 @@ namespace Prz {
                     }
 
                     default: {
-                        throw new FormatError.INVALID ("Unexpected 0x%X", n);
+                        throw new FormatError.INVALID ("Unexpected 0x%02X", n);
                     }
                 }
             }
@@ -147,6 +147,8 @@ namespace Prz {
                     case OpCode.POP:
                     case OpCode.DUP:
                     case OpCode.IADD:
+                    case OpCode.BNO:
+                    case OpCode.BYES:
                     case OpCode.IDIV:
                     case OpCode.IMOD:
                     case OpCode.IMUL:
@@ -168,7 +170,7 @@ namespace Prz {
                     }
 
                     default: {
-                        throw new FormatError.INVALID ("Unknown opcode 0x%X", b);
+                        throw new FormatError.INVALID ("Unknown opcode 0x%02X", b);
                     }
                 }
 
@@ -239,7 +241,7 @@ namespace Prz {
                     } else if (len == 4) {
                         num = read (IntegerType.INT);
                     } else {
-                        throw new FormatError.SEMANTIC ("Invalid length 0x%X on integer type", len);
+                        throw new FormatError.SEMANTIC ("Invalid length 0x%08X on integer type", len);
                     }
 
                     e = new Pool.Entry.number (num, count);
@@ -247,7 +249,7 @@ namespace Prz {
                     var dest = read (IntegerType.INT);
                     e = new Pool.Entry.link (dest);
                 } else {
-                    throw new FormatError.INVALID ("Invalid constant pool entry type 0x%X (Did you forget the constant pool end byte 0xBC?)", type);
+                    throw new FormatError.INVALID ("Invalid constant pool entry type 0x%02X (Did you forget the constant pool end byte 0xBC?)", type);
                 }
 
                 count++;
@@ -284,7 +286,7 @@ namespace Prz {
             }
 
             if (num != a) {
-                throw new FormatError.INVALID ("expected 0x%X, got 0x%X", num, a);
+                throw new FormatError.INVALID ("expected 0x%08X, got 0x%08X", num, a);
             }
         }
 

@@ -48,7 +48,7 @@ namespace Prz {
             var parser = new Prz.ByteParser ();
             try {
                 var code = parser.parse_bytes (args[1]);
-                var vm = new VM (code);
+                var vm = new PVM (code);
                 vm.run ();
             } catch (Prz.FormatError e) {
                 stdout.printf ("An error occurred while validating the file format: %s\n", e.message);

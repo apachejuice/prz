@@ -22,6 +22,11 @@ namespace Prz {
         DYNSTACK = 0x01,
         MAXSTACK = 0x02,
 
+        /* Miscellaneous */
+        POP = 0x09,
+        DUP = 0x10,
+        ROT = 0x11,
+
         /* Integer operations */
         IPUSH = 0x03,
         IADD = 0x04,
@@ -29,10 +34,10 @@ namespace Prz {
         IDIV = 0x06,
         IMUL = 0x07,
         IMOD = 0x08,
-
-        /* Others */
-        POP = 0x09,
-        DUP = 0x10,
-        ROT = 0x11,
+         
+        /* Boolean stuff */
+        BYES = 0x12,
+        BNO = 0x13,
+        BNEG = 0x14,
     }
 }

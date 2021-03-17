@@ -1,4 +1,4 @@
-/* formaterror.vala
+/* bridge.vapi
  *
  * Copyright 2021 apachejuice <ubuntugeek1904@gmail.com>
  *
@@ -16,23 +16,24 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-using GLib;
-
 namespace Prz {
-    public class Stack<T> : Gee.ArrayList<T> {
-        public T push (T e) {
-            add (e);
-            return e;
-        }
-
-        public T pop () {
-            var result = last ();
-            remove_at (size - 1);
-            return result;
-        }
-
-        public T peek () {
-            return last ();
-        }
-    }
+    [CCode (cheader_filename = "primitivedata.h", cname = "PrimitiveData")]
+    public struct PrimitiveData {
+        [CCode (cname = "l")]
+        int64 l;
+        [CCode (cname = "i")]
+        int32 i;
+        [CCode (cname = "s")]
+        int16 s;
+        [CCode (cname = "x")]
+        int8 x;
+        [CCode (cname = "f")]
+        float f;
+        [CCode (cname = "d")]
+        double d;
+        [CCode (cname = "b")]
+        bool b;
+        [CCode (cname = "c")]
+        unichar c;
+    }    
 }

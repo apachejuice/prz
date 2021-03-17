@@ -1,4 +1,4 @@
-/* formaterror.vala
+/* primitivedata.h
  *
  * Copyright 2021 apachejuice <ubuntugeek1904@gmail.com>
  *
@@ -16,23 +16,18 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-using GLib;
+#ifndef _PRIMITIVEDATA_H_
+#define _PRIMITIVEDATA_H_
+#include <glib.h>
 
-namespace Prz {
-    public class Stack<T> : Gee.ArrayList<T> {
-        public T push (T e) {
-            add (e);
-            return e;
-        }
-
-        public T pop () {
-            var result = last ();
-            remove_at (size - 1);
-            return result;
-        }
-
-        public T peek () {
-            return last ();
-        }
-    }
-}
+typedef union _PrimitiveData {
+    gint64 l;
+    gint32 i;
+    gint16 s;
+    gint8 x;
+    gfloat f;
+    gdouble d;
+    gboolean b;
+    gunichar c;
+} PrimitiveData;
+#endif

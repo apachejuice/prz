@@ -119,13 +119,13 @@ namespace Prz {
                 result.append (@"Entry[len=$len index=$index can_be_number=$can_be_number value={");
                 if (raw_data.length <= 10) {
                     for (var i = 0; i < raw_data.length - 1; i++) {
-                        result.append ("0x%X, ".printf (raw_data[i]));
+                        result.append ("0x%02X, ".printf (raw_data[i]));
                     }
 
-                    result.append ("0x%X}".printf (raw_data[raw_data.length - 1]));
+                    result.append ("0x%02X}".printf (raw_data[raw_data.length - 1]));
                 } else {
                     var len = raw_data.length;
-                    result.append ("0x%X, 0x%X, 0x%X ... 0x%X, 0x%X, 0x%X}".printf (
+                    result.append ("0x%02X, 0x%02X, 0x%02X ... 0x%02X, 0x%02X, 0x%02X}".printf (
                         raw_data[0], raw_data[1], raw_data[2],
                         raw_data[len - 3], raw_data[len - 2], raw_data[len - 1]
                     ));

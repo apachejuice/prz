@@ -13,6 +13,7 @@ prvm_sources = [
   'stack.vala',
   'vmerror.vala',
   'opcode.vala',
+  'common.vapi',
 ]
 
 prvm_deps = [
