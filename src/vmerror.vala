@@ -25,5 +25,6 @@ namespace Prz {
         NO_MAIN_METHOD,
         WRONG_TYPE,
         INTERNAL,
+        EMPTY_STACK,
     }
 }

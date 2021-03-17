@@ -149,10 +149,13 @@ namespace Prz {
                     case OpCode.IADD:
                     case OpCode.BNO:
                     case OpCode.BYES:
+                    case OpCode.BNEG:
                     case OpCode.IDIV:
                     case OpCode.IMOD:
                     case OpCode.IMUL:
                     case OpCode.ISUB:
+                    case OpCode.IEQ:
+                    case OpCode.INEQ:
                     case OpCode.ROT:
                     case OpCode.DYNSTACK: {
                         i = new Instruction (b, source_loc);
@@ -164,6 +167,7 @@ namespace Prz {
                         break;
                     }
 
+                    case OpCode.COND_JMP:
                     case OpCode.IPUSH: {
                         i = new Instruction (b, source_loc, {body_scanner.read_int ()});
                         break;

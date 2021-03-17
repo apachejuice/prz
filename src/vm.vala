@@ -65,7 +65,7 @@ namespace Prz {
         private void run_main () throws VMError {
             var main_func = get_function ("Main");
             if (main_func == null) {
-                throw new VMError.NO_MAIN_METHOD ("No main method found. Please define the main method as 'func Main(args [String]) Int'");
+                throw new VMError.NO_MAIN_METHOD ("No main method found. Please define the main method as 'func Main(args [String]) Int'.");
             }
 
             run_function (main_func);
@@ -119,12 +119,28 @@ namespace Prz {
             
             for (int i = 0; i < f.code.size; i++) {
                 var args = f.code[i].args;
-                stdout.printf ("locals: %s\n", locals_to_string (locals));
+                stdout.printf ("locals: %s index: %d\n", locals_to_string (locals), i);
                 OpCode op;
                 switch (op = (OpCode) f.code[i].opcode) {
                     case OpCode.BNO:
                     case OpCode.BYES: {
                         locals.push (new_bool (op == OpCode.BYES));
+                        break;
+                    }
+                    
+                    case OpCode.COND_JMP: {
+                        PrimitiveValue data;
+                        require_type (data = locals.pop (), op, PrimitiveDataType.BOOL);
+                        if (data.data.b) {
+                            i = ((int32) args[0]) - 1; // for loop increments it
+                        }
+
+                        break;
+                    }
+
+                    case OpCode.BNEG: {
+                        require_type (locals.peek (), op, PrimitiveDataType.BOOL);
+                        locals.push (new_bool (!locals.pop ().data.b));
                         break;
                     }
 
@@ -143,10 +159,20 @@ namespace Prz {
                     case OpCode.IMUL: 
                     case OpCode.IMOD:
                     case OpCode.ISUB: {
-                        require_integer_maxsize (32, locals.peek ());
-                        var first = locals.pop ();
-                        var second = locals.pop ();
+                        PrimitiveValue first, second;
+                        require_integer_maxsize (32, first = locals.pop (), op);
+                        require_integer_maxsize (32, second = locals.pop (), op);
                         locals.push (i32_arithmetic (first.data.i, second.data.i, op));
+                        break;
+                    }
+
+                    case OpCode.INEQ:
+                    case OpCode.IEQ: {
+                        PrimitiveValue first, second;
+                        require_integer_maxsize (64, first = locals.pop (), op);
+                        require_integer_maxsize (64, second = locals.pop (), op);
+                        var iseq = first.data.l == second.data.l;
+                        locals.push (new_bool (op == OpCode.INEQ ? !iseq : iseq));
                         break;
                     }
 
@@ -186,29 +212,29 @@ namespace Prz {
             return new_i32 (value);
         }
 
-        private void require_integer_maxsize (uint8 maxsize, PrimitiveValue value) throws VMError {
-            if (maxsize == 8) {
-                require_type (value, PrimitiveDataType.INT8);
-            } else if (maxsize == 16) {
-                require_type (value, PrimitiveDataType.INT16);
+        private void require_integer_maxsize (uint8 maxsize, PrimitiveValue value, OpCode op) throws VMError {
+            if (maxsize == 64) {
+                require_integer_type (value, op);
             } else if (maxsize == 32) {
-                require_type (value, PrimitiveDataType.INT32);
-            } else if (maxsize == 64) {
-                require_type (value, PrimitiveDataType.INT64);
+                require_type (value, op, PrimitiveDataType.INT16, PrimitiveDataType.INT32, PrimitiveDataType.INT8);
+            } else if (maxsize == 16) {
+                require_type (value, op, PrimitiveDataType.INT16, PrimitiveDataType.INT8);
+            } else if (maxsize == 8) {
+                require_type (value, op, PrimitiveDataType.INT8);
             } else {
                 throw new VMError.INTERNAL ("Invalid integer size %d", maxsize);
             }
         }
 
-        private void require_type (PrimitiveValue value, PrimitiveDataType type) throws VMError {
-            if (value.type != type) {
-                throw new VMError.WRONG_TYPE ("Found incompatible type %s on stack", value.type.to_string ());
+        private void require_type (PrimitiveValue value, OpCode op, params PrimitiveDataType[] types) throws VMError {
+            if (!(value.type in types)) {
+                throw new VMError.WRONG_TYPE ("Found incompatible type %s on stack (for opcode %02XX (%s))", value.type.to_string (), op, op.to_string ());
             }
         }
 
-        private void require_integer_type (PrimitiveValue value) throws VMError {
+        private void require_integer_type (PrimitiveValue value, OpCode op) throws VMError {
             if (!(value.type == PrimitiveDataType.INT8 || value.type == PrimitiveDataType.INT16 || value.type == PrimitiveDataType.INT32 || value.type == PrimitiveDataType.INT64)) {
-                throw new VMError.WRONG_TYPE ("Found incompatible type %s on stack", value.type.to_string ());
+                throw new VMError.WRONG_TYPE ("Found incompatible type %s on stack (for opcode %02X (%s))", value.type.to_string (), op, op.to_string ());
             } 
         }
 

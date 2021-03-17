@@ -25,13 +25,20 @@ namespace Prz {
             return e;
         }
 
-        public T pop () {
+        public T pop () throws VMError {
+            if (is_empty) {
+                throw new VMError.EMPTY_STACK ("Attempted to pop from empty stack");
+            }
+
             var result = last ();
             remove_at (size - 1);
             return result;
         }
 
-        public T peek () {
+        public T peek () throws VMError {
+            if (is_empty) {
+                throw new VMError.EMPTY_STACK ("Attempted to peek from empty stack");
+            }
             return last ();
         }
     }

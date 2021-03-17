@@ -27,7 +27,7 @@ namespace Prz {
         DUP = 0x10,
         ROT = 0x11,
 
-        /* Integer operations */
+        /* 32-bit integer operations */
         IPUSH = 0x03,
         IADD = 0x04,
         ISUB = 0x05,
@@ -39,5 +39,10 @@ namespace Prz {
         BYES = 0x12,
         BNO = 0x13,
         BNEG = 0x14,
+
+        /* Equality */
+        IEQ = 0x15,
+        INEQ = 0x16,
+        COND_JMP = 0x17,
     }
 }

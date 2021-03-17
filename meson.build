@@ -5,6 +5,4 @@ project('prvm', ['c', 'vala'],
                    ],
 )
 
-i18n = import('i18n')
-
 subdir('src')

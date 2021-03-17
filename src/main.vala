@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-namespace Prz {
+ namespace Prz {
     public class Main : Object {
         private static bool version = false;
 
@@ -63,7 +63,7 @@ namespace Prz {
 
         private static void run_options () {
             if (version) {
-                stdout.printf ("%s %s", Config.PKGNAME, Config.PKGVER);
+                stdout.printf ("%s %s\n", Config.PKGNAME, Config.PKGVER);
                 Process.exit (0);
             }
         }
